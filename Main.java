@@ -19,5 +19,12 @@ public class Main {
             C = (C * M) % N;
         }
         System.out.println("M: " + M + "\nC: " + C);
+
+        // 3rd Step
+        long R = C % N;
+        for(long i = 0; i < d - 1; i++) {
+            R = (R * C) % N;
+        }
+        System.out.println("R: " + R);
     }
 }
