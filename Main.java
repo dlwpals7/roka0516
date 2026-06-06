@@ -57,21 +57,46 @@ abstract class Character {
 }
 
 class Player extends Character {
-    int maxLevel = 6, currentLevel = 0, exp = 0;
-    // x-1 + x*x
-    int[] expTable = { 1, 5, 11, 19, 29, 41 }
+    int level, exp, gold;
     
-    Player(String name) {
-        super(name, 100, 100, 20, 10);
+    Player(String name, int maxHp, int maxEnergy, int damage, int armour, int level, int exp, int gold) {
+        super(name, maxHp, maxEnergy, damage, armour);
+        this.level = level;
+        this.exp = exp;
+        this.gold = gold;
     }
 
-    void gainExp(int value) {
-        if (this.currentLevel >= this.maxLevel) return;
+    void modifyExpPos(int value) {
         this.exp += value;
-        while (this.exp < this.expTable[this.currentLevel]) {
-            this.exp -= this.expTable[this.currentLevel];
-            this.currentLevel += 1;
-        }
+    }
+    
+    void modifyLevelPos(int value) {
+        this.level += value;
+    }
+
+    void modifyGoldPos(int value) {
+        this.gold += value;
+    }
+
+    int getLevel() {
+        return this.level;
+    }
+    
+    int getExp() {
+        return this.exp;
+    }
+    
+    int getGold() {
+        return this.gold;
+    }
+}
+
+class PlayerPool {
+    private PlayerPool() {}
+
+    // name, maxHp, maxEnergy, damage, armour, level, exp, gold
+    public static Player getAdventurer() {
+        return new Player("모험가", 100, 100, 20, 10, 0, 0, 0);
     }
 }
 
@@ -83,6 +108,14 @@ class Monster extends Character {
         super(name, maxHp, maxEnergy, damage, armour);
         this.rewardExp = rewardExp;
         this.rewardGold = rewardGold;
+    }
+
+    int getRewardExp() {
+        return this.rewardExp;
+    }
+    
+    int getRewardGold() {
+        return this.rewardGold;
     }
 }
 
@@ -97,14 +130,52 @@ class MonsterPool {
     }
 }
 
+class LevelManager {
+    //LevelManager() {}
+    int max_level = 6;
+    // x-1 + x*x
+    int[] expTable = { 1, 5, 11, 19, 29, 41 };
+
+    boolean isMaxLevel(Player player) {
+        return player.getLevel() >= this.max_level;
+    }
+    
+    void gainExpInform(Player player, int value) {
+        if (isMaxLevel(player)) {
+            player.modifyExpPos((-1)*player.getExp());
+            return;
+        } 
+        
+        player.modifyExpPos(value);
+        while (player.getExp() >= this.expTable[player.getLevel()]) {
+            player.modifyExpPos((-1)*this.expTable[player.getLevel()]);
+            player.modifyLevelPos(1);
+            System.out.println("-------------------\n" + player.getName() + player.getPostposition(3) + " Lv." + player.getLevel() + "이 되었다!");
+            
+            if (!isMaxLevel(player)) {
+                System.out.println("잔여 경험치: " + player.getExp() + "xp");
+                if (player.getExp() > this.expTable[player.getLevel()]) {
+                    System.out.println("레벨 업까지: " + (this.expTable[player.getLevel()] % player.getExp()) + "xp\n");
+                }
+                else {
+                    System.out.println("레벨 업까지: " + (this.expTable[player.getLevel()] - player.getExp()) + "xp\n");
+                }
+            }
+            
+            if (isMaxLevel(player)) { 
+                player.modifyExpPos((-1)*player.getExp());
+                break;
+            }
+        }
+    }
+}
 
 class BattleManager {
     //BattleManager() {}
     private int intInput = 0;
     
     void actionSelection(Character actor) {
-        System.out.println("-------------------");
-        System.out.println("뭘할까?\n1. 공격\n2. 방어\n3. 회피\n0. 종료\n");
+        System.out.println("-------------------\n뭘할까?\n1. 공격\n2. 방어\n3. 회피\n0. 종료\n");
     }
     
     void battleInfrom(Character actor1, Character actor2) {
@@ -155,27 +226,36 @@ public class Main {
         Scanner input = new Scanner(System.in);
         int intInput = 0;
         
-        Character adventurer = new Player("모험가");
-        Character goblin_1 = MonsterPool.getGoblin();
-        Character orc_1 = MonsterPool.getOrc();
+        Player adventurer_1 = PlayerPool.getAdventurer();
+        Monster goblin_1 = MonsterPool.getGoblin();
+        Monster orc_1 = MonsterPool.getOrc();
         BattleManager battleManager = new BattleManager();
+        LevelManager levelManager = new LevelManager();
         
         while (true) {
-            battleManager.actionSelection(adventurer);
+            battleManager.actionSelection(adventurer_1);
             intInput = input.nextInt();
             if (intInput == 0) { break; }
-            battleManager.actionJunction(intInput, adventurer, goblin_1);
+            battleManager.actionJunction(intInput, adventurer_1, goblin_1);
             
             if (!goblin_1.isAlive()) {
-                System.out.println(goblin_1.getName() + goblin_1.getPostposition(3) + " 쓰러졌다!\n");
+                System.out.println("\n-------------------\n" + goblin_1.getName() + goblin_1.getPostposition(3) + " 쓰러졌다!\n");
+                levelManager.gainExpInform(adventurer_1, goblin_1.getRewardExp());
                 break;
             }
         } 
 
-        while (intInput != 0) {
-            battleManager.actionJunction(intInput, adventurer, orc_1);
-            battleManager.actionSelection(adventurer);
+        while (true) {
+            battleManager.actionSelection(adventurer_1);
             intInput = input.nextInt();
+            if (intInput == 0) { break; }
+            battleManager.actionJunction(intInput, adventurer_1, orc_1);
+            
+            if (!orc_1.isAlive()) {
+                System.out.println(orc_1.getName() + orc_1.getPostposition(3) + " 쓰러졌다!\n");
+                levelManager.gainExpInform(adventurer_1, orc_1.getRewardExp());
+                break;
+            }
         }
         System.out.println("-------------------\n종료");
     }
