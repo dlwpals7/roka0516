@@ -2,6 +2,61 @@ import java.util.*;
 import java.lang.*;
 import java.io.*;
 
+abstract class Item {
+    String itemName;
+    int price;
+    
+    Item(String itemName, int price) {
+        this.itemName = itemName;
+        this.price = price;
+    }
+
+
+    // setter
+
+    
+    // getter
+    String getItemName() {
+        return this.itemName;
+    }
+}
+
+interface weaponary {
+    void setItemDamage(int value);
+    int getItemDamage();
+}
+
+interface armoury {
+    void setItemProtect(int value);
+    int getItemProtect();
+}
+    
+class Weapon extends Item implements weaponary {
+    int damage;
+
+    Weapon(String name, int price, int damage) {
+        super(name, price);
+        this.damage = damage;
+    }
+
+    void setItemDamage(int value) {
+        
+    }
+    
+    int getItemDamage() {
+        
+    }
+}
+
+class ItemPool {
+    private ItemPool() {}
+
+    // name, gold, damage
+    public static Item getLongsword() {
+        return new Weapon("롱소드", 5, 20);
+    }
+}
+
 abstract class Character {
     String name, 
     postposition_1,           // 을/를
@@ -33,15 +88,44 @@ abstract class Character {
         this.postposition_3 = postposition ? "는 " : "은 ";
     }
 
-    void modifyHpNeg(int damage) {
-        this.currentHp -= damage;
-        this.currentHp = this.currentHp > this.maxHp ? this.maxHp : (this.currentHp < 0 ? 0 : this.currentHp);
-    }
-
     boolean isAlive() {
         return this.currentHp != 0;
     }
 
+    boolean isExceedMaxHp() {
+        return this.currentHp > this.maxHp;
+    }
+
+    boolean isExceedMaxEnergy() {
+        return this.currentEnergy > this.maxEnergy;
+    }
+
+
+    // setter
+    void setMaxHpNeg(int damage) {
+        this.maxHp -= damage;
+        this.maxHp = this.maxHp > 1 ? this.maxHp : 1;
+        if (isExceedMaxHp()) { setCurrentHpNeg(this.currentHp - this.maxHp); }
+    }
+    
+    void setCurrentHpNeg(int damage) {
+        this.currentHp -= damage;
+        this.currentHp = this.currentHp > this.maxHp ? this.maxHp : (this.currentHp < 0 ? 0 : this.currentHp);
+    }
+    
+    void setMaxEnergyNeg(int fatigue) {
+        this.maxEnergy -= fatigue;
+        this.maxEnergy = this.maxEnergy > 1 ? this.maxEnergy : 1;
+        if (isExceedMaxEnergy()) { setCurrentEnergyNeg(this.currentEnergy - this.maxEnergy); }
+    }
+    
+    void setCurrentEnergyNeg(int fatigue) {
+        this.currentEnergy -= fatigue;
+        this.currentEnergy = this.currentEnergy > this.maxEnergy ? this.maxEnergy : (this.currentEnergy < 0 ? 0 : this.currentEnergy);
+    }
+
+    
+    // getter
     String getName() {
         return this.name;
     }
@@ -53,6 +137,22 @@ abstract class Character {
             case 3 -> this.postposition_3;
             default -> "Invalid Index";
         };
+    }
+
+    int getMaxHp() {
+        return this.maxHp;
+    }
+
+    int getCurrentHp() {
+        return this.currentHp;
+    }
+
+    int getMaxEnergy() {
+        return this.maxEnergy;
+    }
+
+    int getCurrentEnergy() {
+        return this.currentEnergy;
     }
 }
 
@@ -66,15 +166,15 @@ class Player extends Character {
         this.gold = gold;
     }
 
-    void modifyExpPos(int value) {
+    void setExpPos(int value) {
         this.exp += value;
     }
     
-    void modifyLevelPos(int value) {
+    void setLevelPos(int value) {
         this.level += value;
     }
 
-    void modifyGoldPos(int value) {
+    void setGoldPos(int value) {
         this.gold += value;
     }
 
@@ -142,31 +242,38 @@ class LevelManager {
     
     void gainExpInform(Player player, int value) {
         if (isMaxLevel(player)) {
-            player.modifyExpPos((-1)*player.getExp());
+            player.setExpPos((-1)*player.getExp());
             return;
         } 
         
-        player.modifyExpPos(value);
+        player.setExpPos(value);
         while (player.getExp() >= this.expTable[player.getLevel()]) {
-            player.modifyExpPos((-1)*this.expTable[player.getLevel()]);
-            player.modifyLevelPos(1);
-            System.out.println("-------------------\n" + player.getName() + player.getPostposition(3) + " Lv." + player.getLevel() + "이 되었다!");
-            
-            if (!isMaxLevel(player)) {
-                System.out.println("잔여 경험치: " + player.getExp() + "xp");
-                if (player.getExp() > this.expTable[player.getLevel()]) {
-                    System.out.println("레벨 업까지: " + (this.expTable[player.getLevel()] % player.getExp()) + "xp\n");
-                }
-                else {
-                    System.out.println("레벨 업까지: " + (this.expTable[player.getLevel()] - player.getExp()) + "xp\n");
-                }
-            }
+            player.setExpPos((-1)*this.expTable[player.getLevel()]);
+            player.setLevelPos(1);
+            System.out.println("-------------------\n" + player.getName() + player.getPostposition(3) + "Lv." + player.getLevel() + "이 되었다!");
             
             if (isMaxLevel(player)) { 
-                player.modifyExpPos((-1)*player.getExp());
+                player.setExpPos((-1)*player.getExp());
                 break;
             }
+            
+            System.out.println("잔여 경험치: " + player.getExp() + "xp");
+            if (player.getExp() > this.expTable[player.getLevel()]) {
+                System.out.println("레벨 업까지: " + (this.expTable[player.getLevel()] % player.getExp()) + "xp\n");
+            }
+             else {
+                System.out.println("레벨 업까지: " + (this.expTable[player.getLevel()] - player.getExp()) + "xp\n");
+            }
         }
+    }
+}
+
+class GoldManager {
+    //GoldManager() {}
+    
+    void gainGoldInform(Player player, int value) {
+        player.setGoldPos(value);
+        System.out.println("-------------------\n" + player.getName() + player.getPostposition(3) + value + "G를 얻었다!\n현재 골드: " + player.getGold() + "G\n");
     }
 }
 
@@ -187,7 +294,7 @@ class BattleManager {
         System.out.print(actor1.name + actor1.postposition_2);
         System.out.println("입힌 피해량: " + realDamage);
         System.out.print(actor2.name + "의 체력 변동치: " + actor2.currentHp + " -> ");
-        actor2.modifyHpNeg(realDamage);
+        actor2.setCurrentHpNeg(realDamage);
         System.out.println(actor2.currentHp + "\n");
     }
 
@@ -201,7 +308,7 @@ class BattleManager {
             System.out.print(actor1.name + actor1.postposition_2);
             System.out.println("입힌 피해량: " + actor1.damage);
             System.out.print(actor2.name + "의 체력 변동치: " + actor2.currentHp + " -> ");
-            actor2.modifyHpNeg(actor1.damage);
+            actor2.setCurrentHpNeg(actor1.damage);
             System.out.println(actor2.currentHp + "\n");
         } else {
             System.out.println("-------------------");
@@ -231,6 +338,7 @@ public class Main {
         Monster orc_1 = MonsterPool.getOrc();
         BattleManager battleManager = new BattleManager();
         LevelManager levelManager = new LevelManager();
+        GoldManager goldManager = new GoldManager();
         
         while (true) {
             battleManager.actionSelection(adventurer_1);
@@ -239,8 +347,9 @@ public class Main {
             battleManager.actionJunction(intInput, adventurer_1, goblin_1);
             
             if (!goblin_1.isAlive()) {
-                System.out.println("\n-------------------\n" + goblin_1.getName() + goblin_1.getPostposition(3) + " 쓰러졌다!\n");
+                System.out.println(goblin_1.getName() + goblin_1.getPostposition(3) + "쓰러졌다!\n");
                 levelManager.gainExpInform(adventurer_1, goblin_1.getRewardExp());
+                goldManager.gainGoldInform(adventurer_1, goblin_1.getRewardGold());
                 break;
             }
         } 
@@ -252,8 +361,9 @@ public class Main {
             battleManager.actionJunction(intInput, adventurer_1, orc_1);
             
             if (!orc_1.isAlive()) {
-                System.out.println(orc_1.getName() + orc_1.getPostposition(3) + " 쓰러졌다!\n");
+                System.out.println(orc_1.getName() + orc_1.getPostposition(3) + "쓰러졌다!\n");
                 levelManager.gainExpInform(adventurer_1, orc_1.getRewardExp());
+                goldManager.gainGoldInform(adventurer_1, orc_1.getRewardGold());
                 break;
             }
         }
