@@ -22,29 +22,46 @@ abstract class Item {
 }
 
 interface weaponary {
-    void setItemDamage(int value);
+    void addItemDamagePos(int value);
     int getItemDamage();
 }
 
 interface armoury {
-    void setItemProtect(int value);
+    void addItemProtectPos(int value);
     int getItemProtect();
 }
     
 class Weapon extends Item implements weaponary {
-    int damage;
+    int itemDamage;
 
-    Weapon(String name, int price, int damage) {
+    Weapon(String name, int price, int itemDamage) {
         super(name, price);
-        this.damage = damage;
+        this.itemDamage = itemDamage;
     }
 
-    void setItemDamage(int value) {
-        
+    public void addItemDamagePos(int value) {
+        this.itemDamage += value;
     }
     
-    int getItemDamage() {
-        
+    public int getItemDamage() {
+        return this.itemDamage;
+    }
+}
+
+class Armour extends Item implements armoury {
+    int itemProtect;
+
+    Armour(String name, int price, int itemProtect) {
+        super(name, price);
+        this.itemProtect = itemProtect;
+    }
+
+    public void addItemProtectPos(int value) {
+        this.itemProtect += value;
+    }
+    
+    public int getItemProtect() {
+        return this.itemProtect;
     }
 }
 
@@ -52,8 +69,22 @@ class ItemPool {
     private ItemPool() {}
 
     // name, gold, damage
+    public static Item getWoodenStick() {
+        return new Weapon("나무막대기", 1, 15);
+    }
+    public static Item getWoodenStaff() {
+        return new Weapon("나무몽둥이", 1, 25);
+    }
     public static Item getLongsword() {
-        return new Weapon("롱소드", 5, 20);
+        return new Weapon("롱소드", 5, 40);
+    }
+
+    // name, gold, protect
+    public static Item getGambeson() {
+        return new Armour("갬비슨", 20, 20);
+    }
+    public static Item getGambeson() {
+        return new Armour("호버크", 50, 50);
     }
 }
 
@@ -66,16 +97,30 @@ abstract class Character {
     int maxHp, currentHp,     // 체력
     maxEnergy, currentEnergy,  // 활력
     damage,                   // 공격
-    armour;                   // 방어
+    protect,
+    maxItemSlot;                   // 방어
+
+    Weapon equippedWeapon;
+    Armour equippedArmour;
+    ArrayList<Item> equippedItem;
     
-    Character(String name, int maxHp, int maxEnergy, int damage, int armour) {
+    Character(String name, int maxHp, int maxEnergy, int damage, int protect, int maxItemSlot, Weapon equippedWeapon, Armour equippedArmour) {
         this.name = name;
         this.maxHp = maxHp;
         this.currentHp = maxHp;
         this.maxEnergy = maxEnergy;
         this.currentEnergy = maxEnergy;
         this.damage = damage;
-        this.armour = armour;
+        if (equippedWeapon != null) {
+            this.damage += equippedWeapon.getItemDamage();
+        }
+        this.protect = protect;
+        if (equippedArmour != null) {
+            this.protect += equippedArmour.getItemProtect();
+        }
+        this.maxItemSlot = maxItemSlot;
+        this.equippedWeapon = equippedWeapon;
+        this.equippedArmour = equippedArmour;
 
         boolean postposition = true;        //모음으로 끝나는 경우
         if (this.name.charAt(this.name.length()-1) >= '가' && this.name.charAt(this.name.length()-1) <= '힣') {  //자음으로 끝나는 경우
@@ -89,7 +134,7 @@ abstract class Character {
     }
 
     boolean isAlive() {
-        return this.currentHp != 0;
+        return this.currentHp > 0;
     }
 
     boolean isExceedMaxHp() {
@@ -102,24 +147,24 @@ abstract class Character {
 
 
     // setter
-    void setMaxHpNeg(int damage) {
+    void addMaxHpNeg(int damage) {
         this.maxHp -= damage;
         this.maxHp = this.maxHp > 1 ? this.maxHp : 1;
-        if (isExceedMaxHp()) { setCurrentHpNeg(this.currentHp - this.maxHp); }
+        if (isExceedMaxHp()) { addCurrentHpNeg(this.currentHp - this.maxHp); }
     }
     
-    void setCurrentHpNeg(int damage) {
+    void addCurrentHpNeg(int damage) {
         this.currentHp -= damage;
         this.currentHp = this.currentHp > this.maxHp ? this.maxHp : (this.currentHp < 0 ? 0 : this.currentHp);
     }
     
-    void setMaxEnergyNeg(int fatigue) {
+    void addMaxEnergyNeg(int fatigue) {
         this.maxEnergy -= fatigue;
         this.maxEnergy = this.maxEnergy > 1 ? this.maxEnergy : 1;
-        if (isExceedMaxEnergy()) { setCurrentEnergyNeg(this.currentEnergy - this.maxEnergy); }
+        if (isExceedMaxEnergy()) { addCurrentEnergyNeg(this.currentEnergy - this.maxEnergy); }
     }
     
-    void setCurrentEnergyNeg(int fatigue) {
+    void addCurrentEnergyNeg(int fatigue) {
         this.currentEnergy -= fatigue;
         this.currentEnergy = this.currentEnergy > this.maxEnergy ? this.maxEnergy : (this.currentEnergy < 0 ? 0 : this.currentEnergy);
     }
@@ -159,22 +204,22 @@ abstract class Character {
 class Player extends Character {
     int level, exp, gold;
     
-    Player(String name, int maxHp, int maxEnergy, int damage, int armour, int level, int exp, int gold) {
-        super(name, maxHp, maxEnergy, damage, armour);
+    Player(String name, int maxHp, int maxEnergy, int damage, int protect, int maxItemSlot, Weapon equippedWeapon, Armour equippedArmour, int level, int exp, int gold) {
+        super(name, maxHp, maxEnergy, damage, protect, maxItemSlot, equippedWeapon, equippedArmour);
         this.level = level;
         this.exp = exp;
         this.gold = gold;
     }
 
-    void setExpPos(int value) {
+    void addExpPos(int value) {
         this.exp += value;
     }
     
-    void setLevelPos(int value) {
+    void addLevelPos(int value) {
         this.level += value;
     }
 
-    void setGoldPos(int value) {
+    void addGoldPos(int value) {
         this.gold += value;
     }
 
@@ -194,9 +239,11 @@ class Player extends Character {
 class PlayerPool {
     private PlayerPool() {}
 
-    // name, maxHp, maxEnergy, damage, armour, level, exp, gold
+    // name, maxHp, maxEnergy, damage, protect, maxItemSlot, equippedWeapon, equippedArmour, level, exp, gold
     public static Player getAdventurer() {
-        return new Player("모험가", 100, 100, 20, 10, 0, 0, 0);
+        Weapon adventurerWeapon = (Weapon) ItemPool.getLongsword();
+        Armour adventurerArmour = (Armour) ItemPool.getGambeson();
+        return new Player("모험가", 100, 100, 5, 0, 4, adventurerWeapon, adventurerArmour, 0, 0, 0);
     }
 }
 
@@ -204,8 +251,8 @@ class Monster extends Character {
     int rewardExp,         // 보상 경험치
     rewardGold;            // 보상 금화
     
-    Monster(String name, int maxHp, int maxEnergy, int damage, int armour, int rewardExp, int rewardGold) {
-        super(name, maxHp, maxEnergy, damage, armour);
+    Monster(String name, int maxHp, int maxEnergy, int damage, int protect, int maxItemSlot, Weapon equippedWeapon, Armour equippedArmour, int rewardExp, int rewardGold) {
+        super(name, maxHp, maxEnergy, damage, protect, maxItemSlot, equippedWeapon, equippedArmour);
         this.rewardExp = rewardExp;
         this.rewardGold = rewardGold;
     }
@@ -221,12 +268,14 @@ class Monster extends Character {
 
 class MonsterPool {
     private MonsterPool() {}
-    // name, maxHp, maxEnergy, damage, armour, rewardExp, rewardGold
+    // name, maxHp, maxEnergy, damage, protect, maxItemSlot, equippedWeapon, equippedArmour, rewardExp, rewardGold
     public static Monster getGoblin() {
-        return new Monster("고블린", 50, 50, 10, 5, 1, 1);
+        Weapon goblinWeapon = (Weapon) ItemPool.getWoodenStick();
+        return new Monster("고블린", 30, 60, 5, 5, 1, goblinWeapon, null, 1, 1);
     }
     public static Monster getOrc() {
-        return new Monster("오크", 150, 75, 60, 30, 6, 3);
+        Weapon orcWeapon = (Weapon) ItemPool.getWoodenStaff();
+        return new Monster("오크", 200, 100, 25, 10, 4, orcWeapon, null, 6, 3);
     }
 }
 
@@ -242,18 +291,18 @@ class LevelManager {
     
     void gainExpInform(Player player, int value) {
         if (isMaxLevel(player)) {
-            player.setExpPos((-1)*player.getExp());
+            player.addExpPos((-1)*player.getExp());
             return;
         } 
         
-        player.setExpPos(value);
+        player.addExpPos(value);
         while (player.getExp() >= this.expTable[player.getLevel()]) {
-            player.setExpPos((-1)*this.expTable[player.getLevel()]);
-            player.setLevelPos(1);
+            player.addExpPos((-1)*this.expTable[player.getLevel()]);
+            player.addLevelPos(1);
             System.out.println("-------------------\n" + player.getName() + player.getPostposition(3) + "Lv." + player.getLevel() + "이 되었다!");
             
             if (isMaxLevel(player)) { 
-                player.setExpPos((-1)*player.getExp());
+                player.addExpPos((-1)*player.getExp());
                 break;
             }
             
@@ -272,7 +321,7 @@ class GoldManager {
     //GoldManager() {}
     
     void gainGoldInform(Player player, int value) {
-        player.setGoldPos(value);
+        player.addGoldPos(value);
         System.out.println("-------------------\n" + player.getName() + player.getPostposition(3) + value + "G를 얻었다!\n현재 골드: " + player.getGold() + "G\n");
     }
 }
@@ -287,14 +336,14 @@ class BattleManager {
     
     void battleInfrom(Character actor1, Character actor2) {
         
-        int realDamage = (actor1.damage * 100) / (100 + (int)Math.pow(actor2.armour, 2));
+        int realDamage = (int) ( (actor1.damage * (100.0 - 0.9 * actor2.protect)) / (100.0 + actor2.protect) );
         System.out.println("-------------------");
         System.out.print(actor1.name + actor1.postposition_2);
         System.out.println(actor2.name + actor2.postposition_1 + "공격!");
         System.out.print(actor1.name + actor1.postposition_2);
         System.out.println("입힌 피해량: " + realDamage);
         System.out.print(actor2.name + "의 체력 변동치: " + actor2.currentHp + " -> ");
-        actor2.setCurrentHpNeg(realDamage);
+        actor2.addCurrentHpNeg(realDamage);
         System.out.println(actor2.currentHp + "\n");
     }
 
@@ -308,7 +357,7 @@ class BattleManager {
             System.out.print(actor1.name + actor1.postposition_2);
             System.out.println("입힌 피해량: " + actor1.damage);
             System.out.print(actor2.name + "의 체력 변동치: " + actor2.currentHp + " -> ");
-            actor2.setCurrentHpNeg(actor1.damage);
+            actor2.addCurrentHpNeg(actor1.damage);
             System.out.println(actor2.currentHp + "\n");
         } else {
             System.out.println("-------------------");
